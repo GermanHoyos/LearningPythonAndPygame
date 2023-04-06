@@ -199,15 +199,40 @@ f100 = fib2(100)    # call it
 f100                # write the result
 # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
 
-#DEFAULT argument values ====================
-def multiInput(inp1, inp2 = 4, myPrompt = 'One more time'):
+#DEFAULT argument values ==================== [NEEDS FURTHER Research]
+def ask_ok(prompt, retries=4, reminder='Please try again!'):
     while True:
-        ok = input(inp1)
-        if ok in ('y','Y','yes','YES','Yes'): #in -> tests if seq contains val
-            return print('Yea!')
-        if ok in ('n','N','NO','no','No'):
-            return print('o ok')
-        inp2 = inp2 - 1
-        if inp2 < 0:
-            raise ValueError('invalid #')
-        print(myPrompt)
+        ok = input(prompt)
+        if ok in ('y', 'ye', 'yes'):
+            return True
+        if ok in ('n', 'no', 'nop', 'nope'):
+            return False
+        retries = retries - 1
+        if retries < 0:
+            raise ValueError('invalid user response')
+        print(reminder)
+
+
+print(' ')
+i = 5
+def f(arg=i):
+    print(arg)
+f()
+i = 6
+f() # will still return 5 because -> The default value is evaluated only once. This makes a difference when the default is a mutable object such as a list, dictionary, or instances of most classes
+
+#DEFAULT argument value 'accumulation' ======
+def f(a, L=[]): #overloading is vastly different than C#
+    L.append(a)
+    return L
+
+print(f(1))
+print(f(2))
+print(f(3))
+
+# [1]
+# [1, 2]
+# [1, 2, 3]
+
+
+
