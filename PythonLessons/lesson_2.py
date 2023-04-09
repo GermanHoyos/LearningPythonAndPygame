@@ -247,3 +247,31 @@ parrot(voltage=1000)
 # -- Lovely plumage, the Norwegian Blue
 # -- It's a stiff !
 
+
+# explanation of below code see
+# https://miro.com/app/board/uXjVMUsIBS4=/?share_link_id=780085514157
+def cheeseshop(kind, *arguments, **keywords):
+    print("-- Do you have any", kind, "?")
+    print("-- I'm sorry, we're all out of", kind)
+    for arg in arguments:
+        print(arg)
+    print("-" * 40)
+    for kw in keywords:
+        print(kw, ":", keywords[kw])
+# It could be called like this:
+
+cheeseshop("Limburger", "It's very runny, sir.",
+           "It's really very, VERY runny, sir.",
+           shopkeeper="Michael Palin",
+           client="John Cleese",
+           sketch="Cheese Shop Sketch")
+# and of course it would print:
+
+# -- Do you have any Limburger ?
+# -- I'm sorry, we're all out of Limburger
+# It's very runny, sir.
+# It's really very, VERY runny, sir.
+# ----------------------------------------
+# shopkeeper : Michael Palin
+# client : John Cleese
+# sketch : Cheese Shop Sketch
