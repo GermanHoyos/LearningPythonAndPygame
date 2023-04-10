@@ -28,6 +28,7 @@ WHITE =     (225,225,225) #RGB VALUES red green blue
 RED =       (225,0,0)
 GREEN =     (0, 225, 0)
 BLUE =      (0, 0, 225)
+GROUND =    (600)
 text_font = pygame.font.SysFont("Adrial", 20)
 
 #Helper function to render text to screen
@@ -43,14 +44,27 @@ def draw_unit_circle_2():
     pygame.draw.circle(DISPLAYSURF, GREEN, (750,50), 10, width=1) # a radius of 1 is literaly 1 pixel # width = hollow
 
 class RandomCircles():
-    def __init__(self):
+    def __init__(
+            self,
+            thisX = 390,
+            thisY = 390
+        ): #think of this as a constructor u r used to in other languages 
         super().__init__()
-        
+        self.thisX = thisX
+        self.thisY = thisY
+
+    def movement(self):
+        if self.thisY < GROUND - 10:
+            self.thisY += VELOCITY_1 * dt 
+
     def draw(self):
-        self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF,RED,(random.randint(390,410),random.randint(390,410)), 10, width = 1)
+        self.draw_this_cirles_angle = pygame.draw.line(DISPLAYSURF, GREEN, (self.thisX, self.thisY), (self.thisX + 9, self.thisY))
+        self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF, RED, (self.thisX,self.thisY), 10, width = 1)
+        self.movement()
+
 
 ####################Instantiate Objects####################
-C1 = RandomCircles()
+C1 = RandomCircles(390,390)
 
 ####################Game Loop####################
 while not done:  
@@ -102,6 +116,7 @@ while not done:
 
     #Draw dynamic unit circles
     C1.draw()
+    
 
 
     ####################REFRESH LOGIC####################
