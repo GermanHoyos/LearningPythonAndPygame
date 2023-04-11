@@ -8,7 +8,7 @@ import pygame, time, math, random
 ####################init pygame and frame timing####################
 #Game mechanic constants
 pygame.init()
-FPS = pygame.time.Clock() #called last at start of game loop 
+FPS = pygame.time.Clock() #called last at end of game loop   
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))  
@@ -22,8 +22,7 @@ prev_time = time.time() # critical for init of timing mehcanics line 40
 VELOCITY_1 =    100     # traverses 800px in about 8.5 seconds # is striclty a speed
 VELOCITY_2 =    10      # first delta time iteration
 GROUND =        (600)   # bottom of the screen
-GRAVITY =       0.5     # traverses 800px in about 8.5 seconds
-BOUNCE_STOP =   1       # 
+GRAVITY =       100     # traverses 800px in about 8.5 seconds
 DELTA_TIME =    float
 
 #"ACCELERATION" is a special case variable that involves some math"
@@ -36,6 +35,8 @@ ACCELERATION = 1
 done = False                        # is game seq complete
 x = 0
 y = 0
+dx = 1
+dy = 1
 EPOCH_TIMESTAMP = int(time.time())
 BLACK =     (0,0,0)                 #tuples are used to store multiple items in a single variable
 WHITE =     (225,225,225)           #RGB VALUES red green blue
@@ -56,21 +57,16 @@ def draw_unit_circle_1():
 def draw_unit_circle_2():
     pygame.draw.circle(DISPLAYSURF, GREEN, (750,50), 10, width=1) # a radius of 1 is literaly 1 pixel # width = hollow
 
-####################Circle Class####################
-class RandomCircles():
+####################Asteroid Circle Class####################
+class AsteroidPlayer(): # Use this circle for asteroids like movement
     def __init__( #think of this as a constructor u r used to in other languages
             self,
-            thisX = 390,
-            thisY = 390,
-            thisAngleInteger = 90,
-            thisAngle = 90 / 180 * math.pi, # 270 = straight down
+            thisX = 720,
+            thisY = 90,
+            thisAngleInteger = 1,
+            thisAngle = 0 / 180 * math.pi,
             thisDT = DELTA_TIME,
-            thisDegree = .017, # found this to be the smoothest measure of degree ticks for a unit circle
-            thisMass = 100,
-            thisRetention = .8,
-            thisXSpeed = 0,
-            thisYspeed = 0,
-            thisId = 1
+            thisDegree = .017 # found this to be the smoothest measure of degree ticks for a unit circle
         ):  
         super().__init__()
         self.thisX = thisX
@@ -79,31 +75,12 @@ class RandomCircles():
         self.thisAngle = thisAngle
         self.thisDT = thisDT
         self.thisDegree = thisDegree
-        self.thisMass = thisMass
-        self.thisRetention = thisRetention # how much energy is retained when a bounce occures
-        self.thisXSpeed = thisXSpeed
-        self.thisYSpeed = thisYspeed
-        self.thisId = thisId
-
-
-    def gravity_behaviour(self):
-        if self.thisY < 600 - 10: # if ball is in air, apply gravity to it
-            self.thisYSpeed += GRAVITY
-        else:   # The moment it hits the gound level: do this: 
-            if self.thisYSpeed > BOUNCE_STOP: # BOUNCE_STOP = bounces are so visually negligible, theres no point in continuing to bounce
-                self.thisYSpeed = self.thisYSpeed * -1 * self.thisRetention
-            else:
-                if abs(self.thisYSpeed) <= BOUNCE_STOP: #absolute Value: BOUNCE_STOP = bounces are so visually negligible, theres no point in continuing to bounce
-                    self.thisYSpeed = 0
 
     def movement(self):
-        self.thisX += self.thisXSpeed
-        self.thisY += self.thisYSpeed
-        ###Direction OF Ball###
-        # self.thisX += math.cos(self.thisAngle) * (VELOCITY_2 * DELTA_TIME) 
-        # self.thisY -= math.sin(self.thisAngle) * (VELOCITY_2 * DELTA_TIME)
-        ###Rotate Ball###
-        # self.thisAngleInteger += 1
+        self.thisX += math.cos(self.thisAngle) * (VELOCITY_2 * DELTA_TIME) 
+        self.thisY -= math.sin(self.thisAngle) * (VELOCITY_2 * DELTA_TIME)
+        self.thisAngleInteger += 1
+        self.thisAngle = self.thisAngleInteger / 180 * math.pi
 
     def draw(self):
         # this draw a line/ ray point to the angle at which the circle is traveling
@@ -113,17 +90,42 @@ class RandomCircles():
             (self.thisX, self.thisY), 
             (self.thisX + 10 * math.cos(self.thisAngle), self.thisY - 10 * math.sin(self.thisAngle))
         )
-        self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF, RED, (self.thisX,self.thisY), 10, width = 1)
-        self.gravity_behaviour()
+        self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF, RED, (self.thisX, self.thisY), 10, width = 1)
         self.movement()
 
+####################Stationary Unit Circle####################
+class UnitCircle():
+    def __init__(self, myX = 570, myY = 50, angle = 0 / 180 * math.pi, rotation = 0):
+        self.myX = myX
+        self.myY = myY
+        self.myAngle = angle
+        self.rotation = rotation
 
-####################Instantiate Objects####################
-C1 = RandomCircles()
+    def draw(self):
+        if self.rotation < 360:
+            self.rotation += 1
+            if self.rotation >= 360:
+                self.rotation = 0
+        self.myAngle = self.rotation / 180 * math.pi
+        self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF, RED, (self.myX, self.myY), 50, width = 1)
+        self.draw_angle = pygame.draw.line(DISPLAYSURF, WHITE, (self.myX, self.myY), #<----------------------------ANGLE
+            (self.myX + 49 * math.cos(self.myAngle), self.myY - 49 * math.sin(self.myAngle)))
+        self.draw_sin = pygame.draw.line(DISPLAYSURF, WHITE, (self.myX + 49 * math.cos(self.myAngle), self.myY),#<-SIN
+            (self.myX + 49 * math.cos(self.myAngle), self.myY - 49 * math.sin(self.myAngle)))        
+        self.draw_cos = pygame.draw.line(DISPLAYSURF, WHITE, (self.myX, self.myY),#<-------------------------------COS
+            (self.myX + 49 * math.cos(self.myAngle), self.myY))         
 
+
+
+####################Bouncing Ball Class####################
+
+
+
+####################Instantiate Objects Outside Of Game loop####################
+C1 = AsteroidPlayer()
+C2 = UnitCircle()
 ####################Game Loop####################
-while not done:
-    FPS.tick(60)  # calling this first i noticed leads to very little visual jitter
+while not done:  
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  #end point
             done = True
@@ -159,9 +161,11 @@ while not done:
     draw_text(convertedFPS,text_font, GREEN, 45, 40)
 
     ####################Game Logic####################
-    #move rect
-    if x < SCREEN_WIDTH - 10:
-        x += VELOCITY_1 * dt
+    #Bounce Rect
+    if (x + 10 > 800 or x < 0 ):
+        dx = -dx  
+    x += VELOCITY_1 * dt * dx     
+
 
     ####################Draw Logic####################
     #Draw test rect    
@@ -173,8 +177,10 @@ while not done:
 
     #Draw dynamic unit circles
     C1.draw()
+    C2.draw()
 
     ####################REFRESH LOGIC####################
     #redraws entire DISPLAYSURF, but does not clear DISPLAYSURF
     pygame.display.flip()
-    
+    #Re-iterates frame per second / doing this outside the loop does not change fps
+    FPS.tick(60)
