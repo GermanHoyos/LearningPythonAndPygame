@@ -1,34 +1,46 @@
-#My fisrt python project using pygame
-#This game is frame rate independent
-#Animations use delta time not FPS
+# My first python program ever
+# Game is frame rate independent
+# Animations use delta time not FPS
 
 ####################imports#################### 
 import pygame, time, math, random
 
 ####################init pygame and frame timing####################
-#CONSTANTS
+#Game mechanic constants
 pygame.init()
 FPS = pygame.time.Clock() #called last at end of game loop   
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))  
-VELOCITY_1 = 100
-#VARIABLES
+
+#Timing variables
 seconds = 0
 minutes = 0
 prev_time = time.time() # critical for init of timing mehcanics line 40
 
-#Global variables
-done = False
+#Physics variables
+VELOCITY_1 =    100     # traverses 800px in about 8.5 seconds # is striclty a speed
+VELOCITY_2 =    10      # first delta time iteration
+GROUND =        (600)   # bottom of the screen
+GRAVITY =       100     # traverses 800px in about 8.5 seconds
+DELTA_TIME =    float
+
+#"ACCELERATION" is a special case variable that involves some math"
+ACCELERATION = 1         
+    # to be used with gravity # is a measure of the speed and direction of motion
+    # eg: ACCELERATION = DELTATIME * VELOCITY / TIME
+    # TIME could = the milliseconds the object is not at rest on ground level
+
+#Other Global variables
+done = False                        # is game seq complete
 x = 0
 y = 0
 EPOCH_TIMESTAMP = int(time.time())
-BLACK =     (0,0,0) #tuples are used to store multiple items in a single variable
-WHITE =     (225,225,225) #RGB VALUES red green blue
+BLACK =     (0,0,0)                 #tuples are used to store multiple items in a single variable
+WHITE =     (225,225,225)           #RGB VALUES red green blue
 RED =       (225,0,0)
 GREEN =     (0, 225, 0)
 BLUE =      (0, 0, 225)
-GROUND =    (600)
 text_font = pygame.font.SysFont("Adrial", 20)
 
 #Helper function to render text to screen
@@ -43,28 +55,44 @@ def draw_unit_circle_1():
 def draw_unit_circle_2():
     pygame.draw.circle(DISPLAYSURF, GREEN, (750,50), 10, width=1) # a radius of 1 is literaly 1 pixel # width = hollow
 
+####################Circle Class####################
 class RandomCircles():
-    def __init__(
+    def __init__( #think of this as a constructor u r used to in other languages
             self,
             thisX = 390,
-            thisY = 390
-        ): #think of this as a constructor u r used to in other languages 
+            thisY = 390,
+            thisAngleInteger = 1,
+            thisAngle = 0 / 180 * math.pi,
+            thisDT = DELTA_TIME,
+            thisDegree = .017 # found this to be the smoothest measure of degree ticks for a unit circle
+        ):  
         super().__init__()
         self.thisX = thisX
         self.thisY = thisY
+        self.thisAngleInteger = thisAngleInteger
+        self.thisAngle = thisAngle
+        self.thisDT = thisDT
+        self.thisDegree = thisDegree
 
     def movement(self):
-        if self.thisY < GROUND - 10:
-            self.thisY += VELOCITY_1 * dt 
+        self.thisX += math.cos(self.thisAngle) * (VELOCITY_2 * DELTA_TIME) 
+        self.thisY -= math.sin(self.thisAngle) * (VELOCITY_2 * DELTA_TIME)
+        self.thisAngleInteger += 1
+        self.thisAngle = self.thisAngleInteger / 180 * math.pi
 
     def draw(self):
-        self.draw_this_cirles_angle = pygame.draw.line(DISPLAYSURF, GREEN, (self.thisX, self.thisY), (self.thisX + 9, self.thisY))
+        # this draw a line/ ray point to the angle at which the circle is traveling
+        self.draw_this_cirles_angle = pygame.draw.line(
+            DISPLAYSURF,
+            WHITE, 
+            (self.thisX, self.thisY), 
+            (self.thisX + 10 * math.cos(self.thisAngle), self.thisY - 10 * math.sin(self.thisAngle))
+        )
         self.draw_unit_circle = pygame.draw.circle(DISPLAYSURF, RED, (self.thisX,self.thisY), 10, width = 1)
         self.movement()
 
-
 ####################Instantiate Objects####################
-C1 = RandomCircles(390,390)
+C1 = RandomCircles()
 
 ####################Game Loop####################
 while not done:  
@@ -85,7 +113,7 @@ while not done:
     #on every cycle of while loop
     now = time.time()       #float
     dt = now - prev_time    #float # "dt" can be used for adjusting movements
-                            #ie: object_position += velocity * dt
+    DELTA_TIME = dt         #ie: object_position += velocity * dt # this makes dt GLOBAL
     prev_time = now         #float
 
     ####################Clear Screen####################
@@ -103,8 +131,13 @@ while not done:
     draw_text(convertedFPS,text_font, GREEN, 45, 40)
 
     ####################Game Logic####################
+    #move rect
     if x < SCREEN_WIDTH - 10:
         x += VELOCITY_1 * dt
+
+    
+
+
 
     ####################Draw Logic####################
     #Draw test rect    
@@ -116,8 +149,6 @@ while not done:
 
     #Draw dynamic unit circles
     C1.draw()
-    
-
 
     ####################REFRESH LOGIC####################
     #redraws entire DISPLAYSURF, but does not clear DISPLAYSURF
