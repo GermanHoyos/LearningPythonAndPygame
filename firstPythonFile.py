@@ -23,8 +23,15 @@ VELOCITY_1 =    100     # traverses 800px in about 8.5 seconds # is striclty a s
 VELOCITY_2 =    10      # first delta time iteration
 GROUND =        (600)   # bottom of the screen
 GRAVITY =       0.5     # traverses 800px in about 8.5 seconds
-BOUNCE_STOP =   0.3       # This prevents infinite tiny bounces
+BOUNCE_STOP =   0.3     # This prevents infinite tiny bounces
+ROLL_STOP =     0.02
 DELTA_TIME =    float
+
+#Experimental physics variables
+MINIMUM_SPEED = 0.3     # same as BOUNCE_STOP, this is used to determine when to set movement to 0 on any axis
+FRICTION      = 0.05     
+# track positions of mouse to get movement vector
+mouse_trajectory = []
 
 #Other Global variables
 done = False                        # is game seq complete
@@ -40,10 +47,20 @@ GREEN =     (0, 225, 0)
 BLUE =      (0, 0, 225)
 text_font = pygame.font.SysFont("Adrial", 20)
 
+#function for calculating vectors
+def calc_motion_vector():
+    x_speed = 0
+    y_speed = 0
+    if len(mouse_trajectory) > 10: # mouse trajectory is a list of coords = mouse_trajectory[x][y]. the first position = [0][0] and the last position [-1][0]
+        x_speed = (mouse_trajectory[-1][0] - mouse_trajectory[0][0]) / len(mouse_trajectory) # [X][y]
+        y_speed = (mouse_trajectory[-1][1] - mouse_trajectory[0][1]) / len(mouse_trajectory) # [x][Y]
+    return x_speed, y_speed
+
+
 #Helper function to render text to screen
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
-    DISPLAYSURF.blit(img, (x, y)) #blit text image to said display surface
+    DISPLAYSURF.blit(img, (x, y)) #blit text image to said display surface # lit = block tansfer - draw surface on another surface
 
 #Experimental unit circle functions using "arc" and "circle"
 def draw_unit_circle_1():
@@ -120,44 +137,100 @@ class Ball:
         self.radius = radius
         self.color = color
         self.mass = mass
-        self.retention = retention
+        self.retention = retention      # this precentage by which ySpeed is retained upon direction change
         self.ySpeed = ySpeed
         self.xSpeed = xSpeed
         self.id = id
         self.circle = ''
+        self.selected = False
+
     
-    def draw(self):
-        self.circle = pygame.draw.circle(DISPLAYSURF, RED, (self.myX, self.myY), self.radius)
+    def draw(self, mouse):
+        self.circle = pygame.draw.circle(DISPLAYSURF, self.color, (self.myX, self.myY), self.radius)
         self.ySpeed = self.check_gravity()
-        self.update_pos()
+        self.update_pos(mouse)
 
     def check_gravity(self):
-        if self.myY < 600 - self.radius:
-            self.ySpeed += GRAVITY # gradualy increases over time
-        else:
-            if self.ySpeed > BOUNCE_STOP: # if my y speed is great enough where I want to contiue bouncing
-                self.ySpeed = self.ySpeed * -1 * self.retention # flip direction and lose energy # UPWARD ^
+        if not self.selected:
+            if self.myY < 600 - self.radius:
+                self.ySpeed += GRAVITY                              # gradualy increases yspeed over time by adding gravity to it continuesly
             else:
-                if abs(self.ySpeed) <= BOUNCE_STOP:
-                    self.ySpeed = 0 # this prevents this.ySpeed being less than bounce stop so much its negative
-                    # which would allow the previous if statement to be true
+                if self.ySpeed > BOUNCE_STOP:                       # if self.ySpeed is great enough where I want to contiue bouncing / changing direction
+                    self.ySpeed = self.ySpeed * -1 * self.retention # flip direction and lose energy # UPWARD ^
+                else:
+                    if abs(self.ySpeed) <= BOUNCE_STOP:
+                        self.ySpeed = 0                             # if the (-) or (+) ySpeed is LESSTHAN BOUNCE_STOP, then stop bouncing # this catches the negative side of the bounce, as opposed to the positive side which # is caught by the if statement above this one
+            if (self.myX < self.radius + (0) and self.xSpeed < 0) or \
+                (self.myX > 800 - self.radius and self.xSpeed> 0):
+                self.xSpeed *= -1 * self.retention
+                if abs(self.xSpeed) < BOUNCE_STOP:
+                    self.xSpeed = 0
+            if self.ySpeed == 0 and self.xSpeed != 0:
+                if self.xSpeed > 0:
+                    self.xSpeed -= FRICTION
+                    if self.xSpeed < ROLL_STOP:
+                        self.xSpeed = 0
+                elif self.xSpeed < 0:
+                    self.xSpeed += FRICTION
+                    if abs(self.xSpeed) <= ROLL_STOP:
+                        self.xSpeed = 0
+
+        else: # if ball is grabed and let go, let the downward speeds be reset such that gravity can begin acting on it again
+            # self.xSpeed = 0
+            # self.ySpeed = 0
+            self.xSpeed = x_push
+            self.ySpeed = y_push
         return self.ySpeed
     
-    def update_pos(self):
-        self.myY += self.ySpeed
-        self.myX += self.xSpeed
+    def update_pos(self, mouse):
+        if not self.selected:
+            self.myY += self.ySpeed
+            self.myX += self.xSpeed
+        else:
+            self.myX = mouse[0]
+            self.myY = mouse[1]
+
+
+    def check_select(self, pos):
+        self.selected = False
+        if self.circle.collidepoint(pos):
+            self.selected = True
+        return self.selected
+
+
+
+
+
+
 
 ####################Instantiate Objects Outside Of Game loop####################
 C1 = AsteroidPlayer()
 C2 = UnitCircle()
 
-ball1 = Ball(50, 50, 30, 'RED', 100, .9, 0, 0, 1)
+ball1 = Ball(50, 50, 30, 'GREEN', 100, .9, 0, 0, 1)
 
 ####################Game Loop####################
-while not done:  
+while not done:
+
+    mouse_coords = pygame.mouse.get_pos()
+    mouse_trajectory.append(mouse_coords)
+    if len(mouse_trajectory) > 20:
+        mouse_trajectory.pop(0) # first in first out
+    x_push, y_push = calc_motion_vector()
+
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  #end point
             done = True
+
+        #detect mouse events
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1: # 1 = left mouse click
+                if ball1.check_select(event.pos):
+                    active_select = True
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                active_select = False
+                ball1.check_select((-1111,-1111))
 
     ####################Within Game Loop Timing Mechanics####################
     current_frame_rate = FPS.get_fps()
@@ -209,7 +282,7 @@ while not done:
     C2.draw()
 
     #Draw ball experiment
-    ball1.draw()
+    ball1.draw(mouse_coords)
     # ball1.update_pos()
     # ball1.ySpeed = ball1.check_gravity();
 
